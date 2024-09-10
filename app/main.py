@@ -48,6 +48,9 @@ def main_interface() -> None:
 def pipeline(dataset: pd.DataFrame) -> None:
     with st.expander("Dataset"):
         st.write(dataset)
+    feature = st.selectbox("Select feature", dataset.columns)
+    fig = lib.line_plot_with_legend(dataset, [feature])
+    st.pyplot(fig)
 
 
 if __name__ == '__main__':

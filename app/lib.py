@@ -1,7 +1,6 @@
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import streamlit as st
-import matplotlib.pyplot as plt
 
 
 def merge_files_to_dataset(
@@ -17,7 +16,7 @@ def merge_files_to_dataset(
     return main_df
 
 
-def line_plot_with_legend(df, variables):
+def line_plot_with_legend(df: pd.DataFrame, variables: list[str]) -> plt.Figure:
     # для теста))
     df = df[df['item_id'] == 'STORE_2_085']
 
