@@ -1,4 +1,11 @@
-def merge_func(shop_sales: pd.DataFrame, shop_sales_prices: pd.DataFrame, shop_sales_dates: pd.DataFrame) -> pd.DataFrame:
+import pandas as pd
+
+
+def merge_files_to_dataset(
+        shop_sales: pd.DataFrame,
+        shop_sales_prices: pd.DataFrame,
+        shop_sales_dates: pd.DataFrame
+) -> pd.DataFrame:
     shop_sales_dates['date_id'] = shop_sales_dates.index + 1
     merged = shop_sales.merge(shop_sales_dates, on='date_id', how='left')
     merged.fillna('Nothing', inplace=True)
