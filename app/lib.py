@@ -27,8 +27,8 @@ def line_plot_with_legend(df, variables):
     ax.set_xlabel('Index')
     ax.set_ylabel('Values')
     ax.legend(title="Variables")
-    
+
     # правим отступы
     plt.tight_layout()
     # для стримлита
-    st.pyplot(fig)
+    return fig
