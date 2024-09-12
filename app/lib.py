@@ -15,6 +15,18 @@ def merge_files_to_dataset(
     main_df['sell_price'] = main_df['sell_price'].ffill().bfill()
     return main_df
 
+def summ_sales_data(df, date_column, granularity):
+    df[date_column] = pd.to_datetime(df[date_column])
+    columns_to_sum = ['cnt', 'CASHBACK_STORE_1', 'CASHBACK_STORE_2', 'CASHBACK_STORE_3', 'sell_price']
+    if granularity == 'Day':
+        return df
+    elif granularity == 'Week':
+        grouped_df = df.groupby(pd.Grouper(key=date_column, freq='W'))[columns_to_sum].sum().reset_index()
+    elif granularity == 'Month':
+        grouped_df = df.groupby(pd.Grouper(key=date_column, freq='M'))[columns_to_sum].sum().reset_index()
+    else:
+        raise ValueError("Неверно задана гранулярность. Используйте 'Day', 'Week' или 'Month'.")
+    return grouped_df
 
 def line_plot_with_legend(df: pd.DataFrame, variables: list[str]) -> plt.Figure:
     # для теста))
