@@ -25,6 +25,17 @@ In yandex.cloud VM -> edit vm, select your tag, wait
 - [ ] Проверка корректность работы моделей на тестовых данных, включая новые товары, для которых нет исторических данных.
 - [ ] Оптимизировать работу системы и устранить обнаруженные ошибки.
 
+## Зависимости проекта
+
+Для работы нашего проекта требуются следующие библиотеки:
+
+- [Matplotlib](https://matplotlib.org/stable/contents.html)
+- [Pandas](https://pandas.pydata.org/)
+- [Seaborn](https://seaborn.pydata.org/)
+- [NumPy](https://numpy.org/)
+- [LightGBM](https://lightgbm.readthedocs.io/)
+- [Scikit-learn](https://scikit-learn.org/stable/)
+- [Streamlit](https://streamlit.io/)
 
 ## Используемые источники
 * https://www.kaggle.com/code/nadezhda2019/regression
