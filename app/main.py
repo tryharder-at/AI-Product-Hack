@@ -20,18 +20,18 @@ def main_interface() -> None:
             "What is the date format?",
         )
     }
-    test_data = st.sidebar.checkbox("Test data*")
 
-    col1, col2, col3 = st.columns(3)
-    main_file = col1.file_uploader(
+    main_file = st.sidebar.file_uploader(
         "Upload a shop sales file", type="csv", accept_multiple_files=False,
     )
-    sales_prices_file = col2.file_uploader(
+    sales_prices_file = st.sidebar.file_uploader(
         "Upload a shop sales prices file", type="csv", accept_multiple_files=False
     )
-    sales_date_file = col3.file_uploader(
+    sales_date_file = st.sidebar.file_uploader(
         "Upload a shop sales date file", type="csv", accept_multiple_files=False
     )
+
+    test_data: bool = st.sidebar.checkbox("Test data*")
 
     if test_data:
         main_file = "test_data/shop_sales.csv"
@@ -51,6 +51,8 @@ def pipeline(dataset: pd.DataFrame) -> None:
     feature = st.selectbox("Select feature", dataset.columns)
     fig = lib.line_plot_with_legend(dataset, [feature])
     st.pyplot(fig)
+
+    item_ids: list[str] = st.multiselect("Select item_id", sorted(set(dataset.item_id)))
 
 
 if __name__ == '__main__':
