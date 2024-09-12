@@ -19,6 +19,7 @@ def merge_files_to_dataset(
 
 
 def summ_sales_data(df, date_column, granularity):
+
     df[date_column] = pd.to_datetime(df[date_column])
     if granularity == 'Day':
         return df
@@ -27,22 +28,25 @@ def summ_sales_data(df, date_column, granularity):
     elif granularity == 'Month':
         resample_rule = 'M'
     
-    grouped = df.set_index(date_column).resample(resample_rule).agg({
+    # Устанавливаем индекс на 'date_column' и 'item_id', чтобы выполнить группировку по обоим уровням
+    df.set_index([date_column, 'item_id'], inplace=True)
+    
+    # Группируем по дате с учетом resample_rule и сохраняем группировку по 'item_id'
+    grouped = df.groupby(['item_id']).resample(resample_rule, level=0).agg({
         'cnt': 'sum',
         'sell_price': 'mean',
         'CASHBACK_STORE_1': lambda x: x.sum() / len(x),
         'CASHBACK_STORE_2': lambda x: x.sum() / len(x),
         'CASHBACK_STORE_3': lambda x: x.sum() / len(x),
-        'item_id': 'first', 
-        'store_id': 'first',  
-        'date_id': 'first', 
-        'wm_yr_wk': 'first',
-        'weekday': 'first', 
+        'store_id': 'first',
+        'date_id': 'first',  
+        'wm_yr_wk': 'first',  
+        'weekday': 'first',  
         'wday': 'first',  
-        'month': 'first', 
+        'month': 'first',  
         'year': 'first',  
         'event_name_1': lambda x: x.dropna().iloc[0] if not x.dropna().empty else None,
-        'event_type_1': lambda x: x.dropna().iloc[0] if not x.dropna().empty else None,
+        'event_type_1': lambda x: x.dropna().iloc[0] if not x.dropna().empty else None,  
         'event_name_2': lambda x: x.dropna().iloc[0] if not x.dropna().empty else None,
         'event_type_2': lambda x: x.dropna().iloc[0] if not x.dropna().empty else None,
     })
