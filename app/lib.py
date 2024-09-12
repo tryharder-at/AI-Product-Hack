@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -89,3 +91,63 @@ def line_plot_with_legend(df: pd.DataFrame, variables: list[str]) -> plt.Figure:
     plt.tight_layout()
     # для стримлита
     return fig
+
+def forecast_sales(trained_models, method, current_data, date_until, granularity='D'):
+    """
+    Строит численный прогноз продаж до заданной даты с помощью уже обученной модели.
+
+    :param trained_models: Словарь обученных моделей.
+    :param method: Метод, используемый для прогнозирования ('Constant', 'Exponential Smoothing', 'Gradient Boosting').
+    :param current_data: Исходные данные о продажах.
+    :param date_until: Дата (в виде строки 'YYYY-MM-DD') до которой нужен прогноз.
+    :param granularity: Гранулярность прогноза (например, 'D' - ежедневно).
+    :return: Прогноз продаж до заданной даты.
+    """
+    index = pd.date_range(start=current_data.index[-1] + pd.Timedelta(days=1), end=date_until, freq=granularity)
+    forecast_length = len(index)
+
+    if method == 'Constant':
+        predictions = [current_data.iloc[-1]] * forecast_length
+
+    elif method in trained_models:
+        future_X = np.arange(len(current_data), len(current_data) + forecast_length).reshape(-1, 1)
+        predictions = trained_models[method].predict(future_X)
+
+    forecast_series = pd.Series(predictions, index=index)
+    return forecast_series
+
+
+def mean_absolute_percentage_error(y_true, y_pred):
+    """
+    Рассчитывает среднее абсолютное процентное отклонение (MAPE).
+    """
+    y_true, y_pred = pd.Series(y_true), pd.Series(y_pred)
+    return ((y_true - y_pred).abs() / y_true.abs()).mean() * 100
+
+
+def calculate_metrics(true_values, predictions_dict):
+    """
+    Рассчитывает метрики прогнозов для нескольких методов.
+
+    :param true_values: Список (или массив) истинных значений.
+    :param predictions_dict: Словарь, где ключи - названия методов, значения - списки (или массивы) прогнозов.
+    :return: DataFrame с метриками для каждого метода.
+    """
+    metrics_data = []
+
+    for method, predictions in predictions_dict.items():
+        rmse = mean_squared_error(true_values, predictions, squared=False)
+        mae = mean_absolute_error(true_values, predictions)
+        mape = mean_absolute_percentage_error(true_values, predictions)
+        r2 = r2_score(true_values, predictions)
+
+        metrics_data.append({
+            'Method': method,
+            'RMSE': rmse,
+            'MAE': mae,
+            'MAPE': mape,
+            'R2': r2
+        })
+
+    return pd.DataFrame(metrics_data)
+
