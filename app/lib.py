@@ -16,18 +16,38 @@ def merge_files_to_dataset(
     return main_df
 
 
-def summ_sales_data(df: pd.DataFrame, date_column, granularity: str) -> pd.DataFrame:
+def summ_sales_data(df, date_column, granularity):
     df[date_column] = pd.to_datetime(df[date_column])
-    columns_to_sum = ['cnt', 'CASHBACK_STORE_1', 'CASHBACK_STORE_2', 'CASHBACK_STORE_3', 'sell_price']
     if granularity == 'Day':
         return df
     elif granularity == 'Week':
-        grouped_df = df.groupby(pd.Grouper(key=date_column, freq='W'))[columns_to_sum].sum().reset_index()
+        resample_rule = 'W' 
     elif granularity == 'Month':
-        grouped_df = df.groupby(pd.Grouper(key=date_column, freq='M'))[columns_to_sum].sum().reset_index()
-    else:
-        raise ValueError("Неверно задана гранулярность. Используйте 'Day', 'Week' или 'Month'.")
-            
+        resample_rule = 'M'
+    
+    grouped = df.set_index(date_column).resample(resample_rule).agg({
+        'cnt': 'sum',
+        'sell_price': 'mean',
+        'CASHBACK_STORE_1': lambda x: x.sum() / len(x),
+        'CASHBACK_STORE_2': lambda x: x.sum() / len(x),
+        'CASHBACK_STORE_3': lambda x: x.sum() / len(x),
+        'item_id': 'first', 
+        'store_id': 'first',  
+        'date_id_x': 'first',  
+        'wm_yr_wk': 'first',
+        'weekday': 'first', 
+        'wday': 'first',  
+        'month': 'first', 
+        'year': 'first',  
+        'date_id_y': 'first',  
+        'event_name_1': lambda x: x.dropna().iloc[0] if not x.dropna().empty else None,
+        'event_type_1': lambda x: x.dropna().iloc[0] if not x.dropna().empty else None,
+        'event_name_2': lambda x: x.dropna().iloc[0] if not x.dropna().empty else None,
+        'event_type_2': lambda x: x.dropna().iloc[0] if not x.dropna().empty else None,
+    })
+    
+    grouped_df = grouped.reset_index()
+
     return grouped_df
 
 
