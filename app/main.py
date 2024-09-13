@@ -55,14 +55,14 @@ def pipeline(dataset: pd.DataFrame) -> None:
     item_ids: list[str] = st.multiselect(
         "Select item_id",
         sorted(set(dataset.item_id)),
-        max_selections=1
+        max_selections=1,
+        default=['STORE_2_714']
     )
     if not item_ids:
         return
     granularity = st.selectbox("Select granularity", ['Day', 'Week', 'Month'])
     dataset = lib.summ_sales_data(dataset, 'date', granularity=granularity)
     dataset = lib.df_encoding(dataset)
-    st.write(dataset)
     data_prediction = lib.get_preds(dataset, item_ids, 1)
     st.write(data_prediction)
     fig = lib.line_plot_with_legend(data_prediction, ['cnt_SMA_3_lag_1', 'cnt', 'model_prediction'])
