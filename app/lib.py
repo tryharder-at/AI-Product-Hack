@@ -453,9 +453,8 @@ def forecast_plot_from_df(df, date_column, value_column, forecast_columns):
 
     return fig
 
-
-def decompose_series(df, date_col='date', column='cnt', model='additive', period=365):
-    #пример импользования: decompose_series(df, date_col='date', column='cnt', model='additive', period=365)
+def decompose_series(df, date_col='date', column='cnt', model='additive', period=7):
+    # пример использования: decompose_series(df, date_col='date', column='cnt', model='additive', period=365)
 
     # Создаем копию датафрейма, чтобы не изменять оригинал
     df = df.copy()
@@ -489,12 +488,11 @@ def decompose_series(df, date_col='date', column='cnt', model='additive', period
     # Получаем компоненты
     observed = decomposition.observed
     trend = decomposition.trend
-    seasonal = decomposition.seasonal
     residual = decomposition.resid
 
     # Визуализируем результаты
     plt.style.use('seaborn-whitegrid')
-    fig, axes = plt.subplots(4, 1, figsize=(14, 12), sharex=False)
+    fig, axes = plt.subplots(3, 1, figsize=(14, 9), sharex=False)
 
     # Настройка формата отображения дат
     date_format = '%Y-%m-%d'
@@ -511,17 +509,11 @@ def decompose_series(df, date_col='date', column='cnt', model='additive', period
     axes[1].set_xlabel('Дата')
     axes[1].xaxis.set_tick_params(rotation=45)
 
-    # График сезонности
-    axes[2].plot(seasonal.index, seasonal, label='Сезонность', color='green')
-    axes[2].set_ylabel('Сезонность')
+    # График остатков
+    axes[2].plot(residual.index, residual, label='Остатки', color='purple')
+    axes[2].set_ylabel('Остатки')
     axes[2].set_xlabel('Дата')
     axes[2].xaxis.set_tick_params(rotation=45)
-
-    # График остатков
-    axes[3].plot(residual.index, residual, label='Остатки', color='purple')
-    axes[3].set_ylabel('Остатки')
-    axes[3].set_xlabel('Дата')
-    axes[3].xaxis.set_tick_params(rotation=45)
 
     # Улучшаем компоновку и отображение
     plt.tight_layout()
