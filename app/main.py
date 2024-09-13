@@ -49,10 +49,24 @@ def pipeline(dataset: pd.DataFrame) -> None:
     with st.expander("Dataset"):
         st.write(dataset)
     feature = st.selectbox("Select feature", dataset.columns)
-    fig = lib.line_plot_with_legend(dataset, [feature])
-    st.pyplot(fig)
+    # fig = lib.line_plot_with_legend(dataset, [feature])
+    # st.pyplot(fig)
 
-    item_ids: list[str] = st.multiselect("Select item_id", sorted(set(dataset.item_id)))
+    item_ids: list[str] = st.multiselect(
+        "Select item_id",
+        sorted(set(dataset.item_id)),
+        max_selections=1
+    )
+    if not item_ids:
+        return
+    granularity = st.selectbox("Select granularity", ['Day', 'Week', 'Month'])
+    dataset = lib.summ_sales_data(dataset, 'date', granularity=granularity)
+    dataset = lib.df_encoding(dataset)
+    st.write(dataset)
+    data_prediction = lib.get_preds(dataset, item_ids, 1)
+    st.write(data_prediction)
+    fig = lib.line_plot_with_legend(data_prediction, ['cnt_SMA_3_lag_1', 'cnt', 'model_prediction'])
+    st.pyplot(fig)
 
 
 if __name__ == '__main__':

@@ -5,6 +5,8 @@ import pandas as pd
 import seaborn as sns
 from Tools import *
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
+from lightgbm import LGBMRegressor
+
 
 def simple_moving_average(df, column, window):
     df[f'{column}_SMA_{window}'] = df[column].rolling(window=window).mean()
@@ -30,25 +32,24 @@ def exponential_moving_average(df, column, span):
 # Пример использования:
 # df = exponential_moving_average(df, 'sales', span=3)
 
-def line_plot_with_legend(df, variables):
-    # Построение линий для каждой переменной
-    plt.figure(figsize=(10, 6))
-    
-    for var in variables:
-        sns.lineplot(data=df, x=df.index, y=var, label=var)
-    
-    # Подписи осей
-    plt.xlabel('Index')
-    plt.ylabel('Values')
-    
-    # Добавляем легенду
-    plt.legend(title="Variables")
-    
-    # Отображаем график
-    plt.tight_layout()
-    plt.show()
+# def line_plot_with_legend(df, variables):
+#     # Построение линий для каждой переменной
+#     plt.figure(figsize=(10, 6))
+#
+#     for var in variables:
+#         sns.lineplot(data=df, x=df.index, y=var, label=var)
+#
+#     # Подписи осей
+#     plt.xlabel('Index')
+#     plt.ylabel('Values')
+#
+#     # Добавляем легенду
+#     plt.legend(title="Variables")
+#
+#     # Отображаем график
+#     plt.tight_layout()
+#     plt.show()
 
-import pandas as pd
 
 def calculate_mape(df, target_col, predictions_list, add=1e-10):
     """
@@ -83,6 +84,7 @@ def calculate_mape(df, target_col, predictions_list, add=1e-10):
     
     # Возвращаем результаты в виде DataFrame
     return pd.DataFrame(mape_results)
+
 
 def create_lag_features_with_prediction(df, feature_list, min_lag, max_lag):
     """
@@ -119,7 +121,6 @@ def create_lag_features_with_prediction(df, feature_list, min_lag, max_lag):
     prediction_df = pd.DataFrame([prediction_dict])
 
     return lagged_df, prediction_df
-
 
 
 def merge_files_to_dataset(
@@ -179,6 +180,7 @@ def preprocess_data_for_prediction(df: pd.DataFrame) -> pd.DataFrame:
         
     return df
 
+
 def get_preds(df, list_sku, horizont):
     
     df_m  = df[df['item_id'].isin(list_sku)].copy()
@@ -202,7 +204,6 @@ def get_preds(df, list_sku, horizont):
     group_dt = df_m['date']
     
     # create model for selector
-    from lightgbm import LGBMRegressor
     model = LGBMRegressor(max_depth=3, verbosity = -1)
     # create selector
     selector1 = Kraken(model, cv_datetime, MAPE, 'exp1')
@@ -257,11 +258,11 @@ def calculate_group_means(df: pd.DataFrame) -> pd.DataFrame:
 
 def line_plot_with_legend(df: pd.DataFrame, variables: list[str]) -> plt.Figure:
     # для теста))
-    df = df[df['item_id'] == 'STORE_2_085']
+    # df = df[df['item_id'] == 'STORE_2_085']
 
     fig, ax = plt.subplots(figsize=(10, 6))
     for var in variables:
-        sns.lineplot(data=df, x=df.index, y=var, ax=ax, label=var)
+        sns.lineplot(data=df, x=df.date, y=var, ax=ax, label=var)
     ax.set_xlabel('Index')
     ax.set_ylabel('Values')
     ax.legend(title="Variables")
@@ -356,6 +357,7 @@ def evaluate_predictions(df):
     return results_df
 
 
+
 def df_encoding(sku: pd.DataFrame) -> pd.DataFrame:
     df_one_hot = sku.copy()
     columns = ['event_name_1', 'event_type_1',	'event_name_2',	'event_type_2', 'weekday']
@@ -371,12 +373,12 @@ def forecast_plot(real_series, forecast1, forecast2, forecast3):
     ax.plot(real_series, label='Actual Series', color='blue')
 
     # Отрисовка прогнозов
-    ax.plot(np.arange(len(actual_series), len(actual_series) + len(forecast1)), 
-            forecast1, label='Forecast 1', color='red', linestyle='--')
-    ax.plot(np.arange(len(actual_series), len(actual_series) + len(forecast2)), 
-            forecast2, label='Forecast 2', color='green', linestyle=':')
-    ax.plot(np.arange(len(actual_series), len(actual_series) + len(forecast3)), 
-            forecast3, label='Forecast 3', color='orange', linestyle='-.')
+    # ax.plot(np.arange(len(actual_series), len(actual_series) + len(forecast1)),
+    #         forecast1, label='Forecast 1', color='red', linestyle='--')
+    # ax.plot(np.arange(len(actual_series), len(actual_series) + len(forecast2)),
+    #         forecast2, label='Forecast 2', color='green', linestyle=':')
+    # ax.plot(np.arange(len(actual_series), len(actual_series) + len(forecast3)),
+    #         forecast3, label='Forecast 3', color='orange', linestyle='-.')
 
     # Настройка меток и легенды
     ax.set_xlabel('Time')

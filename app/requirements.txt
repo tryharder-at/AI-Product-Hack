@@ -1,3 +1,6 @@
 streamlit
 seaborn
 matplotlib
+sklearn
+lightgbm
+shap
