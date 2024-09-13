@@ -304,31 +304,57 @@ def mean_absolute_percentage_error(y_true, y_pred):
     return ((y_true - y_pred).abs() / y_true.abs()).mean() * 100
 
 
-def calculate_metrics(true_values, predictions_dict):
-    """
-    Рассчитывает метрики прогнозов для нескольких методов.
+def calculate_mae(df, target_col, predictions_list):
+    """ Рассчитывает MAE для нескольких прогнозов по отношению к таргету. """
+    # Проверка, что таргет и прогнозы есть в DataFrame
+    if target_col not in df.columns:
+        raise ValueError(f"Колонка с таргетом '{target_col}' не найдена в DataFrame.")
 
-    :param true_values: Список (или массив) истинных значений.
-    :param predictions_dict: Словарь, где ключи - названия методов, значения - списки (или массивы) прогнозов.
-    :return: DataFrame с метриками для каждого метода.
-    """
-    metrics_data = []
+    missing_predictions = [pred for pred in predictions_list if pred not in df.columns]
+    if missing_predictions:
+        raise ValueError(f"Прогнозы {missing_predictions} не найдены в DataFrame.")
 
-    for method, predictions in predictions_dict.items():
-        rmse = mean_squared_error(true_values, predictions, squared=False)
-        mae = mean_absolute_error(true_values, predictions)
-        mape = mean_absolute_percentage_error(true_values, predictions)
-        r2 = r2_score(true_values, predictions)
+    mae_results = []
+    # Рассчет MAE для каждого прогноза
+    for pred_col in predictions_list:
+        mae = np.mean(np.abs(df[target_col] - df[pred_col]))
+        mae_results.append({'Prediction': pred_col, 'MAE': mae})
 
-        metrics_data.append({
-            'Method': method,
-            'RMSE': rmse,
-            'MAE': mae,
-            'MAPE': mape,
-            'R2': r2
-        })
+    return pd.DataFrame(mae_results)
 
-    return pd.DataFrame(metrics_data)
+def calculate_rmse(df, target_col, predictions_list):
+    """ Рассчитывает RMSE для нескольких прогнозов по отношению к таргету. """
+    # Проверка, что таргет и прогнозы есть в DataFrame
+    if target_col not in df.columns:
+        raise ValueError(f"Колонка с таргетом '{target_col}' не найдена в DataFrame.")
+
+    missing_predictions = [pred for pred in predictions_list if pred not in df.columns]
+    if missing_predictions:
+        raise ValueError(f"Прогнозы {missing_predictions} не найдены в DataFrame.")
+
+    rmse_results = []
+    # Рассчет RMSE для каждого прогноза
+    for pred_col in predictions_list:
+        rmse = np.sqrt(np.mean((df[target_col] - df[pred_col]) ** 2))
+        rmse_results.append({'Prediction': pred_col, 'RMSE': rmse})
+
+    return pd.DataFrame(rmse_results)
+
+def evaluate_predictions(df):
+    """Функция для оценки различных методов предсказания."""
+    methods = ['model_prediction', 'cnt_SMA_3_lag_1', 'cnt_WMA_3_lag_1', 'mean']
+
+    # Вычисляем метрики
+    mape_df = calculate_mape(df, 'cnt', methods)
+    mae_df = calculate_mae(df, 'cnt', methods)
+    rmse_df = calculate_rmse(df, 'cnt', methods)
+
+    # Объединение результатов в один DataFrame
+    results_df = pd.merge(mape_df, mae_df, on='Prediction')
+    results_df = pd.merge(results_df, rmse_df, on='Prediction')
+
+    return results_df
+
 
 def df_encoding(sku: pd.DataFrame) -> pd.DataFrame:
     df_one_hot = sku.copy()
