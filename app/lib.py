@@ -369,16 +369,19 @@ def df_encoding(sku: pd.DataFrame) -> pd.DataFrame:
 def forecast_plot(real_series, forecast1, forecast2, forecast3):
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    # Отрисовка известного временного ряда
+    # Отрисовка реального временного ряда
     ax.plot(real_series, label='Actual Series', color='blue')
 
+    # Индекс для прогнозов (прогнозы начинаются сразу после реального ряда)
+    forecast_index = np.arange(len(real_series), len(real_series) + len(forecast1))
+
     # Отрисовка прогнозов
-    # ax.plot(np.arange(len(actual_series), len(actual_series) + len(forecast1)),
-    #         forecast1, label='Forecast 1', color='red', linestyle='--')
-    # ax.plot(np.arange(len(actual_series), len(actual_series) + len(forecast2)),
-    #         forecast2, label='Forecast 2', color='green', linestyle=':')
-    # ax.plot(np.arange(len(actual_series), len(actual_series) + len(forecast3)),
-    #         forecast3, label='Forecast 3', color='orange', linestyle='-.')
+    ax.plot(forecast_index, forecast1, label='Forecast 1', color='red', linestyle='--')
+    ax.plot(forecast_index, forecast2, label='Forecast 2', color='green', linestyle=':')
+    ax.plot(forecast_index, forecast3, label='Forecast 3', color='orange', linestyle='-.')
+
+    # Добавляем пунктирную линию для обозначения границы между реальными данными и прогнозом
+    ax.axvline(x=len(real_series), color='black', linestyle='--', label='Forecast Start')
 
     # Настройка меток и легенды
     ax.set_xlabel('Time')
