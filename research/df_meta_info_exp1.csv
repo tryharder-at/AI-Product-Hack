@@ -1,6 +1,5 @@
 ,vars,summa,mean_cv_scores,cv1,cv2,cv3,cv4
-0,['month_lag_1'],4,0.473,0.459,0.638,0.244,0.551
-0,"['month_lag_1', 'cnt_WMA_3_lag_1']",4,0.448,0.394,0.608,0.25,0.541
-0,"['month_lag_1', 'cnt_WMA_3_lag_1', 'weekday_Friday_lag_1']",2,0.436,0.402,0.589,0.242,0.513
-0,"['month_lag_1', 'cnt_WMA_3_lag_1', 'weekday_Friday_lag_1', 'year_lag_1']",1,0.426,0.366,0.547,0.242,0.548
-0,"['month_lag_1', 'cnt_WMA_3_lag_1', 'weekday_Friday_lag_1', 'year_lag_1', 'weekday_Sunday_lag_1']",2,0.424,0.373,0.539,0.241,0.543
+0,"['cnt_EMA_3_lag_1', 'weekday_Friday_lag_1', 'weekday_Saturday_lag_1', 'cnt_WMA_3_lag_1', 'weekday_Monday_lag_1', 'weekday_Sunday_lag_1', 'weekday_Thursday_lag_1', 'month_lag_1']",2,335171168750696.0,0.26,0.214,0.238,1340684675002783.2
+0,"['cnt_EMA_3_lag_1', 'weekday_Friday_lag_1', 'weekday_Saturday_lag_1', 'cnt_WMA_3_lag_1', 'weekday_Monday_lag_1', 'weekday_Sunday_lag_1', 'weekday_Thursday_lag_1', 'month_lag_1', 'year_lag_1']",2,335171168750696.0,0.253,0.209,0.238,1340684675002783.2
+0,"['cnt_EMA_3_lag_1', 'weekday_Friday_lag_1', 'weekday_Saturday_lag_1', 'cnt_WMA_3_lag_1', 'weekday_Monday_lag_1', 'weekday_Sunday_lag_1', 'weekday_Thursday_lag_1', 'month_lag_1', 'year_lag_1', 'cnt_SMA_3_lag_1']",2,341870561004031.25,0.248,0.207,0.236,1367482244016124.2
+0,"['cnt_EMA_3_lag_1', 'weekday_Friday_lag_1', 'weekday_Saturday_lag_1', 'cnt_WMA_3_lag_1', 'weekday_Monday_lag_1', 'weekday_Sunday_lag_1', 'weekday_Thursday_lag_1', 'month_lag_1', 'year_lag_1', 'cnt_SMA_3_lag_1', 'CASHBACK_STORE_2_lag_1']",1,339751884472269.8,0.251,0.207,0.235,1359007537889078.5

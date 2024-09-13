@@ -206,6 +206,7 @@ def get_preds(df, list_sku, horizont):
     model = LGBMRegressor(max_depth=3, verbosity=-1)
     selector1 = Kraken(model, cv_datetime, MAPE, 'exp1')
     selector1.get_rank_dict(df_m, df_m['cnt'], lags_cols, group_dt)
+    vars_final = []
     vars_final = selector1.get_vars(df_m, df_m['cnt'], early_stopping_rounds=100, group_dt=group_dt)
 
     if len(vars_final) == 0:
@@ -367,27 +368,37 @@ def df_encoding(sku: pd.DataFrame) -> pd.DataFrame:
     return df_one_hot
 
 
-def forecast_plot_from_dfs(real_df, forecast1_df, forecast2_df, forecast3_df, date_column, value_column):
+def forecast_plot_from_df(df, date_column, value_column, forecast_columns):
     """
-    real_df - датафрейм с реальными данными
-    forecast1_df - датафрейм с прогнозом 1
-    forecast2_df - датафрейм с прогнозом 2
-    forecast3_df - датафрейм с прогнозом 3
-    date_column - столбец с датами в каждом из датафреймов
-    value_column - столбец со значениями временного ряда
+    Отрисовка реального временного ряда и нескольких прогнозов, которые хранятся в одном датафрейме.
+
+    Параметры:
+    - df: DataFrame, содержащий реальный временной ряд и несколько столбцов с прогнозами.
+    - date_column: Столбец с датами.
+    - value_column: Столбец с реальными значениями временного ряда.
+    - forecast_columns: Список столбцов с прогнозами.
     """
     fig, ax = plt.subplots(figsize=(12, 6))
 
     # Отрисовка реального временного ряда
-    ax.plot(real_df[date_column], real_df[value_column], label='Actual Series', color='blue')
+    ax.plot(df[date_column], df[value_column], label='Actual Series', color='blue')
+
+    # Цвета и стили для прогнозов (повторяются при большем числе столбцов)
+    colors = ['red', 'green', 'orange', 'purple', 'brown', 'magenta', 'cyan', 'black']
+    linestyles = ['--', ':', '-.', '-', '--']
 
     # Отрисовка прогнозов
-    ax.plot(forecast1_df[date_column], forecast1_df[value_column], label='Forecast 1', color='red', linestyle='--')
-    ax.plot(forecast2_df[date_column], forecast2_df[value_column], label='Forecast 2', color='green', linestyle=':')
-    ax.plot(forecast3_df[date_column], forecast3_df[value_column], label='Forecast 3', color='orange', linestyle='-.')
+    for i, forecast_column in enumerate(forecast_columns):
+        ax.plot(
+            df[date_column], 
+            df[forecast_column], 
+            label=forecast_column,  # Используем название столбца как метку
+            color=colors[i % len(colors)], 
+            linestyle=linestyles[i % len(linestyles)]
+        )
 
-    # Добавляем пунктирную линию для обозначения начала прогноза
-    ax.axvline(x=real_df[date_column].max(), color='black', linestyle='--', label='Forecast Start')
+    # Добавляем линию для обозначения начала прогноза
+    ax.axvline(x=df[date_column].max(), color='black', linestyle='--', label='Forecast Start')
 
     # Настройка меток и легенды
     ax.set_xlabel('Date')
