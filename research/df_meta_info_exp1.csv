@@ -1,0 +1,6 @@
+,vars,summa,mean_cv_scores,cv1,cv2,cv3,cv4
+0,['month_lag_1'],4,0.473,0.459,0.638,0.244,0.551
+0,"['month_lag_1', 'cnt_WMA_3_lag_1']",4,0.448,0.394,0.608,0.25,0.541
+0,"['month_lag_1', 'cnt_WMA_3_lag_1', 'weekday_Friday_lag_1']",2,0.436,0.402,0.589,0.242,0.513
+0,"['month_lag_1', 'cnt_WMA_3_lag_1', 'weekday_Friday_lag_1', 'year_lag_1']",1,0.426,0.366,0.547,0.242,0.548
+0,"['month_lag_1', 'cnt_WMA_3_lag_1', 'weekday_Friday_lag_1', 'year_lag_1', 'weekday_Sunday_lag_1']",2,0.424,0.373,0.539,0.241,0.543
