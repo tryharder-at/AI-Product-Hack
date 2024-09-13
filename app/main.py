@@ -63,10 +63,17 @@ def pipeline(dataset: pd.DataFrame) -> None:
     granularity = st.selectbox("Select granularity", ['Day', 'Week', 'Month'])
     dataset = lib.summ_sales_data(dataset, 'date', granularity=granularity)
     dataset = lib.df_encoding(dataset)
-    data_prediction = lib.get_preds(dataset, item_ids, 1)
-    st.write(data_prediction)
-    fig = lib.line_plot_with_legend(data_prediction, ['cnt_SMA_3_lag_1', 'cnt', 'model_prediction'])
-    st.pyplot(fig)
+
+    horizont = st.slider("Select horizont", 1, 10, 1)
+    with st.spinner("Please wait"):
+        data_prediction, model = lib.get_preds(dataset, item_ids, horizont)
+        st.write(data_prediction)
+        fig = lib.line_plot_with_legend(data_prediction, ['cnt_SMA_3_lag_1', 'cnt', 'model_prediction'])
+        st.pyplot(fig)
+
+        st.write(lib.evaluate_predictions(data_prediction))
+        fig = lib.forecast_plot_from_df(data_prediction, 'date', 'cnt', ['cnt_SMA_3_lag_1', 'arima_prediction', 'model_prediction'])
+        st.pyplot(fig)
 
 
 if __name__ == '__main__':
