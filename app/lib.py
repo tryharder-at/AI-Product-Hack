@@ -3,6 +3,8 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import adfuller
 from Tools import *
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
 from lightgbm import LGBMRegressor
@@ -182,60 +184,59 @@ def preprocess_data_for_prediction(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def get_preds(df, list_sku, horizont):
-    
-    df_m  = df[df['item_id'].isin(list_sku)].copy()
+    df_m = df[df['item_id'].isin(list_sku)].copy()
     df_m = simple_moving_average(df_m, 'cnt', 3)
     df_m = weighted_moving_average(df_m, 'cnt', 3)
     df_m = exponential_moving_average(df_m, 'cnt', 3)
-    
-    technical_list = ['index_time', 'item_id', 'store_id', 'date_id','cnt', 'date', 'wm_yr_wk', 'wday']
-    list_for_lags  = [i for i in df_m.columns if i not in technical_list]
+
+    technical_list = ['index_time', 'item_id', 'store_id', 'date_id', 'cnt', 'date', 'wm_yr_wk', 'wday']
+    list_for_lags = [i for i in df_m.columns if i not in technical_list]
     lags, pred_df = create_lag_features_with_prediction(df_m, list_for_lags, horizont, horizont)
     lags_cols = [i for i in lags.columns if i not in df_m.columns]
-    df_m = pd.concat([df_m, lags[lags_cols]], axis = 1)
-    # Задаем значение для генератора случайных чисел
+    df_m = pd.concat([df_m, lags[lags_cols]], axis=1)
+
     seed_value = 23
     np.random.seed(seed_value)
-    
-    # creating cross validator
-    window_m = len(df_m.date.unique())//5
-    test_m = window_m//5
-    cv_datetime = DateTimeSeriesSplit(window = window_m, n_splits= 4, test_size = test_m, margin=0)
+
+    window_m = len(df_m.date.unique()) // 5
+    test_m = window_m // 5
+    cv_datetime = DateTimeSeriesSplit(window=window_m, n_splits=4, test_size=test_m, margin=0)
     group_dt = df_m['date']
-    
-    # create model for selector
-    model = LGBMRegressor(max_depth=3, verbosity = -1)
-    # create selector
+
+    model = LGBMRegressor(max_depth=3, verbosity=-1)
     selector1 = Kraken(model, cv_datetime, MAPE, 'exp1')
-
-    # get rank dict from vars
     selector1.get_rank_dict(df_m, df_m['cnt'], lags_cols, group_dt)
+    vars_final = selector1.get_vars(df_m, df_m['cnt'], early_stopping_rounds=100, group_dt=group_dt)
 
-    ## get vars
-    vars_final = selector1.get_vars(df_m, df_m['cnt'], early_stopping_rounds = 100, group_dt = group_dt)
-    
     if len(vars_final) == 0:
         vars_final = [i for i in lags_cols if i.startswith('cnt')]
-    
-    test_dates = pd.Series(df_m['date'].unique()).sort_values().tail(max(3, test_m//2)).values
-    
+
+    test_dates = pd.Series(df_m['date'].unique()).sort_values().tail(max(3, test_m // 2)).values
+
     X_train = df_m[~df_m['date'].isin(test_dates)]
     y_train = df_m[~df_m['date'].isin(test_dates)]['cnt']
-
-    # oot - out of time
     X_oot = df_m[df_m['date'].isin(test_dates)]
-    #y_oot = df_m[df_m['date'].isin(test_dates)]['cnt']
-    
+
     model.fit(X_train[vars_final], y_train)
     pred_df['date'] = X_oot.date.max() + pd.Timedelta(days=horizont)
     pred_df['cnt'] = np.nan
     pred_df['item_id'] = X_oot.item_id.max()
     pred_df['mean'] = X_oot.cnt.mean()
     X_oot['mean'] = X_oot.cnt.mean()
-    list_cont = vars_final + ['mean','cnt_SMA_3_lag_1','item_id', 'date','cnt']
-    data_prediction = pd.concat([X_oot[list_cont], pred_df[list_cont]], axis = 0)
+    list_cont = vars_final + ['mean', 'cnt_SMA_3_lag_1', 'item_id', 'date', 'cnt']
+    data_prediction = pd.concat([X_oot[list_cont], pred_df[list_cont]], axis=0)
     data_prediction['model_prediction'] = model.predict(data_prediction[vars_final])
-    
+
+    # ARIMA predictions
+    for sku in list_sku:
+        sku_series = df_m[df_m['item_id'] == sku]
+        sku_series.set_index('date', inplace=True, drop=False)
+        if adfuller(sku_series['cnt'])[1] < 0.05:  # ADF test to check if series is stationary
+            arima_model = ARIMA(sku_series['cnt'], order=(1, 0, 1))
+            arima_results = arima_model.fit()
+            data_prediction.loc[data_prediction['item_id'] == sku, 'arima_prediction'] = \
+            arima_results.forecast(steps=horizont)[-1]
+
     return data_prediction
 
 
