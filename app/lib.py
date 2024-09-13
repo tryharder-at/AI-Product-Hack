@@ -265,20 +265,25 @@ def get_preds(df, list_sku, horizont):
     
 def calculate_and_plot_shap(model, X_data):
     """
-    Построение SHAP values
-    model - обученная модель 
-    X_data - X_oot[vars_final]
+    model - обученная модель
+    X_data - данные для расчета SHAP values (например, X_oot[vars_final])
+    
+    Возвращает:
+    fig - объект matplotlib.figure.Figure с графиком SHAP values.
     """
-    # Создаем объект для расчета SHAP values в зависимости от типа модели
+    # Создаем объект для расчета SHAP values
     explainer = shap.Explainer(model, X_data)
     
     # Рассчитываем SHAP values
     shap_values = explainer(X_data)
     
-    # Строим beeswarm график для визуализации SHAP values
-    shap.plots.beeswarm(shap_values)
+    # Создаем fig
+    fig, ax = plt.subplots(figsize=(10, 6))
     
-    plt.show()
+    # Строим график для визуализации SHAP values
+    shap.plots.beeswarm(shap_values, show=False, ax=ax)
+    
+    return fig
 
 def calculate_group_means(df: pd.DataFrame) -> pd.DataFrame:
     group_means = df.groupby(['store_number', 'group_id']).agg(
