@@ -40,7 +40,7 @@ http://fixiki.duckdns.org/
 
 - VityaShevcov - Виктор Шевцов
 - limmark21 - Марк Лим
-- tryharder-at - Анатолий Трофимов
+- trof1mov, tryharder-at - Анатолий Трофимов
 - andromeda123248 - Андрей Разумов
 - KissedByF1re - Константин Розанов
 - rudbov - Дарья Пичугина
