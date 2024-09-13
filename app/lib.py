@@ -511,6 +511,12 @@ def decompose_series(df, date_col='date', column='cnt', model='additive', period
     axes[1].set_xlabel('Дата')
     axes[1].xaxis.set_tick_params(rotation=45)
 
+    # График сезонности
+    axes[2].plot(seasonal.index, seasonal, label='Сезонность', color='green')
+    axes[2].set_ylabel('Сезонность')
+    axes[2].set_xlabel('Дата')
+    axes[2].xaxis.set_tick_params(rotation=45)
+
     # График остатков
     axes[3].plot(residual.index, residual, label='Остатки', color='purple')
     axes[3].set_ylabel('Остатки')
