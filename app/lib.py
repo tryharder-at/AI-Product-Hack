@@ -366,26 +366,31 @@ def df_encoding(sku: pd.DataFrame) -> pd.DataFrame:
     return df_one_hot
 
 
-def forecast_plot(real_series, forecast1, forecast2, forecast3):
+def forecast_plot_from_dfs(real_df, forecast1_df, forecast2_df, forecast3_df, date_column, value_column):
+    """
+    real_df - датафрейм с реальными данными
+    forecast1_df - датафрейм с прогнозом 1
+    forecast2_df - датафрейм с прогнозом 2
+    forecast3_df - датафрейм с прогнозом 3
+    date_column - столбец с датами в каждом из датафреймов
+    value_column - столбец со значениями временного ряда
+    """
     fig, ax = plt.subplots(figsize=(12, 6))
 
     # Отрисовка реального временного ряда
-    ax.plot(real_series, label='Actual Series', color='blue')
-
-    # Индекс для прогнозов (прогнозы начинаются сразу после реального ряда)
-    forecast_index = np.arange(len(real_series), len(real_series) + len(forecast1))
+    ax.plot(real_df[date_column], real_df[value_column], label='Actual Series', color='blue')
 
     # Отрисовка прогнозов
-    ax.plot(forecast_index, forecast1, label='Forecast 1', color='red', linestyle='--')
-    ax.plot(forecast_index, forecast2, label='Forecast 2', color='green', linestyle=':')
-    ax.plot(forecast_index, forecast3, label='Forecast 3', color='orange', linestyle='-.')
+    ax.plot(forecast1_df[date_column], forecast1_df[value_column], label='Forecast 1', color='red', linestyle='--')
+    ax.plot(forecast2_df[date_column], forecast2_df[value_column], label='Forecast 2', color='green', linestyle=':')
+    ax.plot(forecast3_df[date_column], forecast3_df[value_column], label='Forecast 3', color='orange', linestyle='-.')
 
-    # Добавляем пунктирную линию для обозначения границы между реальными данными и прогнозом
-    ax.axvline(x=len(real_series), color='black', linestyle='--', label='Forecast Start')
+    # Добавляем пунктирную линию для обозначения начала прогноза
+    ax.axvline(x=real_df[date_column].max(), color='black', linestyle='--', label='Forecast Start')
 
     # Настройка меток и легенды
-    ax.set_xlabel('Time')
-    ax.set_ylabel('Cnt')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Value')
     ax.grid(True)
     ax.legend()
 
