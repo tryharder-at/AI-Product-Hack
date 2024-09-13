@@ -3,6 +3,123 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from Tools import *
+from sklearn.metrics import mean_absolute_percentage_error as MAPE
+
+def simple_moving_average(df, column, window):
+    df[f'{column}_SMA_{window}'] = df[column].rolling(window=window).mean()
+    return df
+
+# Пример использования:
+# df = simple_moving_average(df, 'sales', window=3)
+
+
+def weighted_moving_average(df, column, window):
+    weights = np.arange(1, window + 1)  # Веса от 1 до размера окна
+    wma = df[column].rolling(window).apply(lambda x: np.dot(x, weights)/weights.sum(), raw=True)
+    df[f'{column}_WMA_{window}'] = wma
+    return df
+
+# Пример использования:
+# df = weighted_moving_average(df, 'sales', window=3)
+
+def exponential_moving_average(df, column, span):
+    df[f'{column}_EMA_{span}'] = df[column].ewm(span=span, adjust=False).mean()
+    return df
+
+# Пример использования:
+# df = exponential_moving_average(df, 'sales', span=3)
+
+def line_plot_with_legend(df, variables):
+    # Построение линий для каждой переменной
+    plt.figure(figsize=(10, 6))
+    
+    for var in variables:
+        sns.lineplot(data=df, x=df.index, y=var, label=var)
+    
+    # Подписи осей
+    plt.xlabel('Index')
+    plt.ylabel('Values')
+    
+    # Добавляем легенду
+    plt.legend(title="Variables")
+    
+    # Отображаем график
+    plt.tight_layout()
+    plt.show()
+
+import pandas as pd
+
+def calculate_mape(df, target_col, predictions_list, add=1e-10):
+    """
+    Рассчитывает MAPE для нескольких прогнозов по отношению к таргету.
+    
+    Параметры:
+    - df: DataFrame с данными.
+    - target_col: колонка с истинными значениями (таргет).
+    - predictions_list: список названий столбцов с прогнозами.
+    - add: значение, добавляемое к таргету для избежания деления на ноль.
+    
+    Возвращает:
+    - DataFrame с названиями предсказаний и их значениями MAPE.
+    """
+    
+    # Проверка, что таргет и прогнозы есть в DataFrame
+    if target_col not in df.columns:
+        raise ValueError(f"Колонка с таргетом '{target_col}' не найдена в DataFrame.")
+    
+    missing_predictions = [pred for pred in predictions_list if pred not in df.columns]
+    if missing_predictions:
+        raise ValueError(f"Прогнозы {missing_predictions} не найдены в DataFrame.")
+    
+    # Список для хранения MAPE для каждого прогноза
+    mape_results = []
+    
+    # Рассчет MAPE для каждого прогноза
+    for pred_col in predictions_list:
+        # MAPE = (1/n) * sum(|(y_true - y_pred)| / (y_true + add)) * 100
+        mape = (abs(df[target_col] - df[pred_col]) / (df[target_col] + add)).mean() * 100
+        mape_results.append({'Prediction': pred_col, 'MAPE': mape})
+    
+    # Возвращаем результаты в виде DataFrame
+    return pd.DataFrame(mape_results)
+
+def create_lag_features_with_prediction(df, feature_list, min_lag, max_lag):
+    """
+    Создает лаговые признаки для обучения и для предсказания на следующий день.
+
+    Параметры:
+    - df: DataFrame с исходными данными.
+    - feature_list: список колонок, для которых создаются лаги.
+    - min_lag: минимальный лаг.
+    - max_lag: максимальный лаг.
+
+    Возвращает:
+    - lagged_df: DataFrame для обучения, содержащий лаговые признаки и целевую переменную.
+    - prediction_df: DataFrame с одной строкой, содержащей лаговые признаки для предсказания на следующий день.
+    """
+    # Создаем лаговые признаки для обучения
+    lagged_features = []
+    for lag in range(min_lag, max_lag + 1):
+        lagged = df[feature_list].shift(lag).add_suffix(f'_lag_{lag}')
+        lagged_features.append(lagged)
+
+    # Объединяем исходные данные с лаговыми признаками
+    lagged_df = pd.concat([df] + lagged_features, axis=1)
+    lagged_df.dropna(inplace=True)
+
+    # Создаем лаговые признаки для предсказания на следующий день
+    prediction_dict = {}
+    for feature in feature_list:
+        for lag in range(min_lag, max_lag + 1):
+            lag_feature_name = f'{feature}_lag_{lag}'
+            # Получаем значение для соответствующего лага
+            prediction_dict[lag_feature_name] = df[feature].iloc[-lag]
+
+    prediction_df = pd.DataFrame([prediction_dict])
+
+    return lagged_df, prediction_df
+
 
 
 def merge_files_to_dataset(
@@ -61,6 +178,64 @@ def preprocess_data_for_prediction(df: pd.DataFrame) -> pd.DataFrame:
     df['group_id'] = df['item_id'].str.extract(r'STORE_\d_(\d)').astype(int)
         
     return df
+
+def get_preds(df, list_sku, horizont):
+    
+    df_m  = df[df['item_id'].isin(list_sku)].copy()
+    df_m = simple_moving_average(df_m, 'cnt', 3)
+    df_m = weighted_moving_average(df_m, 'cnt', 3)
+    df_m = exponential_moving_average(df_m, 'cnt', 3)
+    
+    technical_list = ['index_time', 'item_id', 'store_id', 'date_id','cnt', 'date', 'wm_yr_wk', 'wday']
+    list_for_lags  = [i for i in df_m.columns if i not in technical_list]
+    lags, pred_df = create_lag_features_with_prediction(df_m, list_for_lags, horizont, horizont)
+    lags_cols = [i for i in lags.columns if i not in df_m.columns]
+    df_m = pd.concat([df_m, lags[lags_cols]], axis = 1)
+    # Задаем значение для генератора случайных чисел
+    seed_value = 23
+    np.random.seed(seed_value)
+    
+    # creating cross validator
+    window_m = len(df_m.date.unique())//5
+    test_m = window_m//5
+    cv_datetime = DateTimeSeriesSplit(window = window_m, n_splits= 4, test_size = test_m, margin=0)
+    group_dt = df_m['date']
+    
+    # create model for selector
+    from lightgbm import LGBMRegressor
+    model = LGBMRegressor(max_depth=3, verbosity = -1)
+    # create selector
+    selector1 = Kraken(model, cv_datetime, MAPE, 'exp1')
+
+    # get rank dict from vars
+    selector1.get_rank_dict(df_m, df_m['cnt'], lags_cols, group_dt)
+
+    ## get vars
+    vars_final = selector1.get_vars(df_m, df_m['cnt'], early_stopping_rounds = 100, group_dt = group_dt)
+    
+    if len(vars_final) == 0:
+        vars_final = [i for i in lags_cols if i.startswith('cnt')]
+    
+    test_dates = pd.Series(df_m['date'].unique()).sort_values().tail(max(3, test_m//2)).values
+    
+    X_train = df_m[~df_m['date'].isin(test_dates)]
+    y_train = df_m[~df_m['date'].isin(test_dates)]['cnt']
+
+    # oot - out of time
+    X_oot = df_m[df_m['date'].isin(test_dates)]
+    #y_oot = df_m[df_m['date'].isin(test_dates)]['cnt']
+    
+    model.fit(X_train[vars_final], y_train)
+    pred_df['date'] = X_oot.date.max() + pd.Timedelta(days=horizont)
+    pred_df['cnt'] = np.nan
+    pred_df['item_id'] = X_oot.item_id.max()
+    pred_df['mean'] = X_oot.cnt.mean()
+    X_oot['mean'] = X_oot.cnt.mean()
+    list_cont = vars_final + ['mean','cnt_SMA_3_lag_1','item_id', 'date','cnt']
+    data_prediction = pd.concat([X_oot[list_cont], pred_df[list_cont]], axis = 0)
+    data_prediction['model_prediction'] = model.predict(data_prediction[vars_final])
+    
+    return data_prediction
 
 
 def calculate_group_means(df: pd.DataFrame) -> pd.DataFrame:
@@ -155,3 +330,32 @@ def calculate_metrics(true_values, predictions_dict):
 
     return pd.DataFrame(metrics_data)
 
+def df_encoding(sku: pd.DataFrame) -> pd.DataFrame:
+    df_one_hot = sku.copy()
+    columns = ['event_name_1', 'event_type_1',	'event_name_2',	'event_type_2', 'weekday']
+    # Применить one-hot encoding для указанных столбцов
+    df_one_hot = pd.get_dummies(df_one_hot, columns=columns, dtype=int)
+    return df_one_hot
+
+
+def forecast_plot(real_series, forecast1, forecast2, forecast3):
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    # Отрисовка известного временного ряда
+    ax.plot(real_series, label='Actual Series', color='blue')
+
+    # Отрисовка прогнозов
+    ax.plot(np.arange(len(actual_series), len(actual_series) + len(forecast1)), 
+            forecast1, label='Forecast 1', color='red', linestyle='--')
+    ax.plot(np.arange(len(actual_series), len(actual_series) + len(forecast2)), 
+            forecast2, label='Forecast 2', color='green', linestyle=':')
+    ax.plot(np.arange(len(actual_series), len(actual_series) + len(forecast3)), 
+            forecast3, label='Forecast 3', color='orange', linestyle='-.')
+
+    # Настройка меток и легенды
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Cnt')
+    ax.grid(True)
+    ax.legend()
+
+    return fig
