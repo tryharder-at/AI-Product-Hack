@@ -344,7 +344,7 @@ def calculate_rmse(df, target_col, predictions_list):
 
 def evaluate_predictions(df):
     """Функция для оценки различных методов предсказания."""
-    methods = ['model_prediction', 'cnt_SMA_3_lag_1', 'cnt_WMA_3_lag_1', 'mean']
+    methods = ['model_prediction', 'cnt_SMA_3_lag_1', 'cnt_WMA_3_lag_1', 'mean', 'arima_prediction']
 
     # Вычисляем метрики
     mape_df = calculate_mape(df, 'cnt', methods)
