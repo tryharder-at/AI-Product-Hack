@@ -228,15 +228,38 @@ def get_preds(df, list_sku, horizont):
     data_prediction = pd.concat([X_oot[list_cont], pred_df[list_cont]], axis=0)
     data_prediction['model_prediction'] = model.predict(data_prediction[vars_final])
 
-    # ARIMA predictions
-    for sku in list_sku:
-        sku_series = df_m[df_m['item_id'] == sku]
-        sku_series.set_index('date', inplace=True, drop=False)
-        if adfuller(sku_series['cnt'])[1] < 0.05:  # ADF test to check if series is stationary
-            arima_model = ARIMA(sku_series['cnt'], order=(1, 0, 1))
-            arima_results = arima_model.fit()
-            data_prediction.loc[data_prediction['item_id'] == sku, 'arima_prediction'] = \
-            arima_results.forecast(steps=horizont)[-1]
+    # Import ARIMA from statsmodels
+    from statsmodels.tsa.arima.model import ARIMA
+    import warnings
+    warnings.filterwarnings('ignore')
+
+    # Prepare the time series data for ARIMA
+    df_m_ts = df_m[['date', 'cnt']].copy()
+    df_m_ts['date'] = pd.to_datetime(df_m_ts['date'])
+    df_m_ts.set_index('date', inplace=True)
+    df_m_ts = df_m_ts.sort_index()
+    df_m_ts = df_m_ts.asfreq('D')  # Ensure daily frequency
+    df_m_ts['cnt'].fillna(method='ffill', inplace=True)  # Handle missing values
+
+    # Fit the ARIMA model
+    arima_order = (1, 1, 1)  # You can adjust the order based on your data
+    model_arima = ARIMA(df_m_ts['cnt'], order=arima_order)
+    arima_result = model_arima.fit()
+
+    # Predict over the required period
+    # Get the full date range for predictions
+    last_date = df_m_ts.index[-1]
+    pred_dates = data_prediction['date'].unique()
+    full_dates = pd.date_range(start=df_m_ts.index[0], end=pred_dates.max(), freq='D')
+
+    # Generate predictions for all dates in full_dates
+    arima_predictions = arima_result.predict(start=0, end=len(full_dates) - 1)
+    arima_pred_df = pd.DataFrame({'date': full_dates, 'arima_prediction': arima_predictions})
+    arima_pred_df['date'] = pd.to_datetime(arima_pred_df['date'])
+
+    # Merge ARIMA predictions with data_prediction
+    data_prediction['date'] = pd.to_datetime(data_prediction['date'])
+    data_prediction = pd.merge(data_prediction, arima_pred_df, on='date', how='left')
 
     return data_prediction, model
     
