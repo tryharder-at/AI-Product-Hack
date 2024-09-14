@@ -473,7 +473,7 @@ def df_encoding(sku: pd.DataFrame) -> pd.DataFrame:
 def forecast_plot_from_df(df, date_column, value_column, forecast_columns):
     """
     Отрисовка реального временного ряда и нескольких прогнозов, которые хранятся в одном датафрейме.
-
+    
     Параметры:
     - df: DataFrame, содержащий реальный временной ряд и несколько столбцов с прогнозами.
     - date_column: Столбец с датами.
@@ -481,33 +481,55 @@ def forecast_plot_from_df(df, date_column, value_column, forecast_columns):
     - forecast_columns: Список столбцов с прогнозами.
     """
     fig, ax = plt.subplots(figsize=(12, 6))
-
-    # Отрисовка реального временного ряда
-    ax.plot(df[date_column], df[value_column], label='Actual Series', color='blue')
-
+    
+    # Определяем последнюю дату с реальными данными
+    last_actual_date = df[date_column][df[value_column].notna()].max()
+    
+    # Получаем последнее реальное значение
+    last_actual_value = df.loc[df[date_column] == last_actual_date, value_column].values[0]
+    
+    # Отрисовка реального временного ряда до последней даты с реальными данными
+    actual_data = df[df[date_column] <= last_actual_date]
+    ax.plot(actual_data[date_column], actual_data[value_column], label='Actual Series', color='blue')
+    
+    # Добавляем вертикальную прерывистую линию на последнюю дату с реальными данными
+    ax.axvline(x=last_actual_date, color='black', linestyle='--', label='Forecast Start')
+    
     # Цвета и стили для прогнозов (повторяются при большем числе столбцов)
     colors = ['red', 'green', 'orange', 'purple', 'brown', 'magenta', 'cyan', 'black']
     linestyles = ['--', ':', '-.', '-', '--']
-
-    # Отрисовка прогнозов
+    
+    # Отрисовка прогнозов, начиная с последнего реального значения
     for i, forecast_column in enumerate(forecast_columns):
+        # Получаем данные прогноза начиная с даты после последней реальной даты
+        forecast_data = df[df[date_column] > last_actual_date][[date_column, forecast_column]]
+        
+        # Создаем серии дат и значений прогноза, включая последнюю реальную точку
+        forecast_dates = pd.concat([
+            pd.Series([last_actual_date]),        # Добавляем последнюю реальную дату
+            forecast_data[date_column]
+        ], ignore_index=True)
+        
+        forecast_values = pd.concat([
+            pd.Series([last_actual_value]),       # Добавляем последнее реальное значение
+            forecast_data[forecast_column]
+        ], ignore_index=True)
+        
+        # Отрисовываем прогноз как продолжение реального ряда
         ax.plot(
-            df[date_column], 
-            df[forecast_column], 
-            label=forecast_column,  # Используем название столбца как метку
+            forecast_dates, 
+            forecast_values, 
+            label=forecast_column, 
             color=colors[i % len(colors)], 
             linestyle=linestyles[i % len(linestyles)]
         )
-
-    # Добавляем линию для обозначения начала прогноза
-    ax.axvline(x=df[date_column].max(), color='black', linestyle='--', label='Forecast Start')
-
+    
     # Настройка меток и легенды
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Value')
+    ax.set_xlabel('Дата')
+    ax.set_ylabel('Значение')
     ax.grid(True)
     ax.legend()
-
+    
     return fig
 
 def decompose_series(df, date_col='date', column='cnt', model='additive', period=7):
