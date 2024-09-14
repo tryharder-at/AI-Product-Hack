@@ -29,4 +29,4 @@ async def predict(
     data_prediction, _ = await asyncio.to_thread(lib.get_preds, dataset, [item_id], horizont)
     return data_prediction.to_json()
 
-uvicorn.run(app, port=80, log_level="info")
+uvicorn.run(app, host='0.0.0.0', port=50001, log_level="info")

@@ -68,7 +68,7 @@ def pipeline(dataset: pd.DataFrame) -> None:
     with st.spinner("Please wait"):
         data_prediction, model = lib.get_preds(dataset, item_ids, horizont)
         st.write(data_prediction)
-        fig = lib.line_plot_with_legend(data_prediction, ['cnt_SMA_3_lag_1', 'cnt', 'model_prediction'])
+        fig = lib.line_plot_with_legend(data_prediction, [f'cnt_SMA_3_lag_{horizont}', 'cnt', 'model_prediction'])
         st.pyplot(fig)
 
         st.write(lib.evaluate_predictions(data_prediction, horizont))

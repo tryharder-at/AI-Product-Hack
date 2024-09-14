@@ -532,68 +532,68 @@ def forecast_plot_from_df(df, date_column, value_column, forecast_columns):
     
     return fig
 
-def decompose_series(df, date_col='date', column='cnt', model='additive', period=7):
-    # пример использования: decompose_series(df, date_col='date', column='cnt', model='additive', period=365)
-
-    # Создаем копию датафрейма, чтобы не изменять оригинал
-    df = df.copy()
-
-    # Проверяем, есть ли дата в колонках или в индексе
-    if date_col in df.columns:
-        # Убедимся, что столбец даты в формате datetime
-        df[date_col] = pd.to_datetime(df[date_col])
-        # Устанавливаем дату как индекс
-        df.set_index(date_col, inplace=True)
-    elif date_col in df.index.names:
-        # Если дата уже индекс, ничего не делаем
-        pass
-    else:
-        raise KeyError(f"Колонка или индекс '{date_col}' не найдена в датафрейме.")
-
-    # Сортируем индекс
-    df.sort_index(inplace=True)
-
-    # Выбираем временной ряд для анализа
-    ts = df[column]
-
-    # Проверяем на наличие пропущенных значений
-    if ts.isnull().any():
-        print("В данных обнаружены пропущенные значения. Они будут заполнены методом forward fill.")
-        ts = ts.fillna(method='ffill')
-
-    # Выполняем декомпозицию
-    decomposition = seasonal_decompose(ts, model=model, period=period)
-
-    # Получаем компоненты
-    observed = decomposition.observed
-    trend = decomposition.trend
-    residual = decomposition.resid
-
-    # Визуализируем результаты
-    plt.style.use('seaborn-whitegrid')
-    fig, axes = plt.subplots(3, 1, figsize=(14, 9), sharex=False)
-
-    # Настройка формата отображения дат
-    date_format = '%Y-%m-%d'
-
-    # График исходных данных
-    axes[0].plot(observed.index, observed, label='Исходные данные', color='blue')
-    axes[0].set_ylabel('Исходные данные')
-    axes[0].set_xlabel('Дата')
-    axes[0].xaxis.set_tick_params(rotation=45)
-
-    # График тренда
-    axes[1].plot(trend.index, trend, label='Тренд', color='red')
-    axes[1].set_ylabel('Тренд')
-    axes[1].set_xlabel('Дата')
-    axes[1].xaxis.set_tick_params(rotation=45)
-
-    # График остатков
-    axes[2].plot(residual.index, residual, label='Остатки', color='purple')
-    axes[2].set_ylabel('Остатки')
-    axes[2].set_xlabel('Дата')
-    axes[2].xaxis.set_tick_params(rotation=45)
-
-    # Улучшаем компоновку и отображение
-    plt.tight_layout()
-    plt.show()
+# def decompose_series(df, date_col='date', column='cnt', model='additive', period=7):
+#     # пример использования: decompose_series(df, date_col='date', column='cnt', model='additive', period=365)
+#
+#     # Создаем копию датафрейма, чтобы не изменять оригинал
+#     df = df.copy()
+#
+#     # Проверяем, есть ли дата в колонках или в индексе
+#     if date_col in df.columns:
+#         # Убедимся, что столбец даты в формате datetime
+#         df[date_col] = pd.to_datetime(df[date_col])
+#         # Устанавливаем дату как индекс
+#         df.set_index(date_col, inplace=True)
+#     elif date_col in df.index.names:
+#         # Если дата уже индекс, ничего не делаем
+#         pass
+#     else:
+#         raise KeyError(f"Колонка или индекс '{date_col}' не найдена в датафрейме.")
+#
+#     # Сортируем индекс
+#     df.sort_index(inplace=True)
+#
+#     # Выбираем временной ряд для анализа
+#     ts = df[column]
+#
+#     # Проверяем на наличие пропущенных значений
+#     if ts.isnull().any():
+#         print("В данных обнаружены пропущенные значения. Они будут заполнены методом forward fill.")
+#         ts = ts.fillna(method='ffill')
+#
+#     # Выполняем декомпозицию
+#     decomposition = seasonal_decompose(ts, model=model, period=period)
+#
+#     # Получаем компоненты
+#     observed = decomposition.observed
+#     trend = decomposition.trend
+#     residual = decomposition.resid
+#
+#     # Визуализируем результаты
+#     plt.style.use('seaborn-whitegrid')
+#     fig, axes = plt.subplots(3, 1, figsize=(14, 9), sharex=False)
+#
+#     # Настройка формата отображения дат
+#     date_format = '%Y-%m-%d'
+#
+#     # График исходных данных
+#     axes[0].plot(observed.index, observed, label='Исходные данные', color='blue')
+#     axes[0].set_ylabel('Исходные данные')
+#     axes[0].set_xlabel('Дата')
+#     axes[0].xaxis.set_tick_params(rotation=45)
+#
+#     # График тренда
+#     axes[1].plot(trend.index, trend, label='Тренд', color='red')
+#     axes[1].set_ylabel('Тренд')
+#     axes[1].set_xlabel('Дата')
+#     axes[1].xaxis.set_tick_params(rotation=45)
+#
+#     # График остатков
+#     axes[2].plot(residual.index, residual, label='Остатки', color='purple')
+#     axes[2].set_ylabel('Остатки')
+#     axes[2].set_xlabel('Дата')
+#     axes[2].xaxis.set_tick_params(rotation=45)
+#
+#     # Улучшаем компоновку и отображение
+#     plt.tight_layout()
+#     plt.show()
