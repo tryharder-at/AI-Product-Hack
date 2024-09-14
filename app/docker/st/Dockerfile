@@ -4,7 +4,8 @@ WORKDIR /app
 COPY . .
 
 RUN apt-get update && apt-get install -y \
-    curl
+    curl \
+    libgomp1
 
 RUN pip3 install -r requirements.txt
 

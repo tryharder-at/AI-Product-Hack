@@ -318,7 +318,7 @@ def get_preds(df, list_sku, horizont):
     data_prediction['date'] = pd.to_datetime(data_prediction['date'])
     data_prediction = pd.merge(data_prediction, arima_pred_df, on='date', how='left')
 
-    return data_prediction, model, horizont
+    return data_prediction, model
     
 def calculate_and_plot_shap(model, X_data):
     """

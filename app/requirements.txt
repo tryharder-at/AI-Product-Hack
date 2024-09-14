@@ -1,6 +1,10 @@
 streamlit
 seaborn
 matplotlib
-sklearn
+scikit-learn
 lightgbm
 shap
+statsmodels
+fastapi
+uvicorn
+python-multipart
