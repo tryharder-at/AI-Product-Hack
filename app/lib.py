@@ -249,7 +249,7 @@ def get_preds(df, list_sku, horizont):
     cv_datetime = DateTimeSeriesSplit(window=window_m, n_splits=4, test_size=test_m, margin=0)
     group_dt = df_m['date']
 
-    model = LGBMRegressor(max_depth=3, verbosity=-1)
+    model = LGBMRegressor(max_depth=3, verbosity=-1, boosting_type= 'goss')
     selector1 = Kraken(model, cv_datetime, MAPE, 'exp1')
     selector1.get_rank_dict(df_m, df_m['cnt'], lags_cols, group_dt)
     vars_final = []

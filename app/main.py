@@ -72,7 +72,7 @@ def pipeline(dataset: pd.DataFrame) -> None:
         st.pyplot(fig)
 
         st.write(lib.evaluate_predictions(data_prediction, horizont))
-        fig = lib.forecast_plot_from_df(data_prediction, 'date', 'cnt', ['cnt_SMA_3_lag_1', 'arima_prediction', 'model_prediction'])
+        fig = lib.forecast_plot_from_df(data_prediction, 'date', 'cnt', [f'cnt_SMA_3_lag_{horizont}', 'arima_prediction', 'model_prediction'])
         st.pyplot(fig)
 
 
