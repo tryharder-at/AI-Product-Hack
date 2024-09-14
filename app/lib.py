@@ -10,6 +10,47 @@ from Tools import *
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
 from lightgbm import LGBMRegressor
 
+def infer_granularity(dates):
+    dates = dates.sort_values()
+    delta = dates.diff().dropna().unique()
+    if len(delta) == 1:
+        if delta[0] == pd.Timedelta(days=1):
+            return 'Day'
+        elif delta[0] == pd.Timedelta(weeks=1):
+            return 'Week'
+        elif pd.Timedelta(days=28) <= delta[0] <= pd.Timedelta(days=31):
+            return 'Month'
+    raise ValueError("Cannot infer granularity from dates.")
+
+def add_future_dates(pred_df, X_oot, date_column, horizont, granularity):
+    """
+    Добавляет будущие даты в pred_df в соответствии с гранулярностью.
+
+    Параметры:
+    - pred_df: DataFrame, куда нужно добавить даты.
+    - X_oot: DataFrame с исходными данными, из которого берем последнюю дату.
+    - date_column: название колонки с датами.
+    - horizont: горизонт прогнозирования (количество будущих периодов).
+    - granularity: гранулярность ('Day', 'Week', 'Month').
+
+    Возвращает:
+    - pred_df с добавленной колонкой дат.
+    """
+    last_date = X_oot[date_column].max()
+    
+    if granularity == 'Day':
+        date_list = [last_date + pd.Timedelta(days=i) for i in range(1, horizont+1)]
+    elif granularity == 'Week':
+        date_list = [last_date + pd.Timedelta(weeks=i) for i in range(1, horizont+1)]
+    elif granularity == 'Month':
+        date_list = [last_date + pd.DateOffset(months=i) for i in range(1, horizont+1)]
+    else:
+        raise ValueError(f"Unsupported granularity: {granularity}")
+    
+    pred_df[date_column] = date_list
+    return pred_df
+
+
 
 def simple_moving_average(df, column, window):
     df[f'{column}_SMA_{window}'] = df[column].rolling(window=window).mean()
@@ -89,9 +130,10 @@ def calculate_mape(df, target_col, predictions_list, add=1e-10):
     return pd.DataFrame(mape_results)
 
 
+
 def create_lag_features_with_prediction(df, feature_list, min_lag, max_lag):
     """
-    Создает лаговые признаки для обучения и для предсказания на следующий день.
+    Создает лаговые признаки для обучения и для предсказания на следующие min_lag шагов.
 
     Параметры:
     - df: DataFrame с исходными данными.
@@ -101,29 +143,32 @@ def create_lag_features_with_prediction(df, feature_list, min_lag, max_lag):
 
     Возвращает:
     - lagged_df: DataFrame для обучения, содержащий лаговые признаки и целевую переменную.
-    - prediction_df: DataFrame с одной строкой, содержащей лаговые признаки для предсказания на следующий день.
+    - prediction_df: DataFrame с min_lag строками, содержащий лаговые признаки для предсказания на следующие min_lag шагов.
     """
     # Создаем лаговые признаки для обучения
-    lagged_features = []
+    lagged_data = df.copy()
     for lag in range(min_lag, max_lag + 1):
-        lagged = df[feature_list].shift(lag).add_suffix(f'_lag_{lag}')
-        lagged_features.append(lagged)
-
-    # Объединяем исходные данные с лаговыми признаками
-    lagged_df = pd.concat([df] + lagged_features, axis=1)
-    lagged_df.dropna(inplace=True)
-
-    # Создаем лаговые признаки для предсказания на следующий день
-    prediction_dict = {}
-    for feature in feature_list:
-        for lag in range(min_lag, max_lag + 1):
+        for feature in feature_list:
+            lagged_data[f'{feature}_lag_{lag}'] = df[feature].shift(lag)
+    
+    # Удаляем строки с NaN
+    #lagged_df = lagged_data.dropna().reset_index(drop=True)
+    
+    # Создаем лаговые признаки для предсказания
+    # Используем последние min_lag строк из исходного DataFrame
+    prediction_data = df[feature_list].iloc[-min_lag:].copy().reset_index(drop=True)
+    for lag in range(min_lag, max_lag + 1):
+        for feature in feature_list:
             lag_feature_name = f'{feature}_lag_{lag}'
-            # Получаем значение для соответствующего лага
-            prediction_dict[lag_feature_name] = df[feature].iloc[-lag]
-
-    prediction_df = pd.DataFrame([prediction_dict])
-
-    return lagged_df, prediction_df
+            # Сдвигаем данные, чтобы получить лаговые признаки
+            prediction_data[lag_feature_name] = prediction_data[feature].shift(lag - min_lag)
+    
+    # Удаляем ненужные колонки исходных признаков
+    prediction_df = prediction_data.drop(columns=feature_list)
+    # Удаляем строки с NaN, если они есть
+    #prediction_df = prediction_df.dropna().reset_index(drop=True)
+    
+    return lagged_data, prediction_df
 
 
 def merge_files_to_dataset(
@@ -211,22 +256,33 @@ def get_preds(df, list_sku, horizont):
     vars_final = selector1.get_vars(df_m, df_m['cnt'], early_stopping_rounds=100, group_dt=group_dt)
 
     if len(vars_final) == 0:
-        vars_final = [i for i in lags_cols if i.startswith('cnt')]
+        vars_final = [i for i in lags_cols if i.startswith('cnt_')]
 
     test_dates = pd.Series(df_m['date'].unique()).sort_values().tail(max(3, test_m // 2)).values
 
     X_train = df_m[~df_m['date'].isin(test_dates)]
     y_train = df_m[~df_m['date'].isin(test_dates)]['cnt']
+    # Вычисляем медиану по y_train, исключая нули
+    median_value = y_train[y_train != 0].median()
+
+    # Заменяем нули на медианное значение
+    y_train = y_train.replace(0, median_value)
     X_oot = df_m[df_m['date'].isin(test_dates)]
 
     model.fit(X_train[vars_final], y_train)
-    pred_df['date'] = X_oot.date.max() + pd.Timedelta(days=horizont)
+    granularity = infer_granularity(X_oot['date'])
+    pred_df = add_future_dates(pred_df, X_oot, 'date', horizont, granularity)
+    #pred_df['date'] = [X_oot.date.max() + pd.Timedelta(days=i) for i in range(1,horizont+1)]
     pred_df['cnt'] = np.nan
     pred_df['item_id'] = X_oot.item_id.max()
     pred_df['mean'] = X_oot.cnt.mean()
     X_oot['mean'] = X_oot.cnt.mean()
-    list_cont = vars_final + ['mean', 'cnt_SMA_3_lag_1', 'item_id', 'date', 'cnt']
+    list_cont = vars_final + ['mean', f'cnt_SMA_3_lag_{horizont}', 'item_id', 'date', 'cnt']
     data_prediction = pd.concat([X_oot[list_cont], pred_df[list_cont]], axis=0)
+    # Шаг 1: Проверка на дубликаты столбцов
+    all_columns = data_prediction[list_cont].columns
+    duplicated_columns = all_columns[all_columns.duplicated()]
+    data_prediction = data_prediction[list_cont].loc[:, ~all_columns.duplicated()]
     data_prediction['model_prediction'] = model.predict(data_prediction[vars_final])
 
     # Import ARIMA from statsmodels
@@ -262,7 +318,7 @@ def get_preds(df, list_sku, horizont):
     data_prediction['date'] = pd.to_datetime(data_prediction['date'])
     data_prediction = pd.merge(data_prediction, arima_pred_df, on='date', how='left')
 
-    return data_prediction, model
+    return data_prediction, model, horizont
     
 def calculate_and_plot_shap(model, X_data):
     """
@@ -390,9 +446,10 @@ def calculate_rmse(df, target_col, predictions_list):
 
 def evaluate_predictions(df, horizont):
     """Функция для оценки различных методов предсказания."""
-    methods = ['model_prediction', f'cnt_SMA_3_lag_{horizont}', f'cnt_WMA_3_lag_{horizont}', 'mean', 'arima_prediction']
+    methods = ['model_prediction', f'cnt_SMA_3_lag_{horizont}', 'mean', 'arima_prediction']
 
     # Вычисляем метрики
+    df = df[df['cnt'] > 0]
     mape_df = calculate_mape(df, 'cnt', methods)
     mae_df = calculate_mae(df, 'cnt', methods)
     rmse_df = calculate_rmse(df, 'cnt', methods)
